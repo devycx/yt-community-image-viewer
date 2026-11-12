@@ -1,15 +1,15 @@
 // ==UserScript==
-// @name         YouTube 移动网页版社区图片全屏查看器
-// @namespace    https://github.com/devycx
+// @name         YouTube 移动版社区图片全屏查看器
+// @namespace    https://github.com/devycx/yt-community-image-viewer
 // @version      4.3.0
-// @description  修复点击下载被YouTube全局路由拦截导致页面跳转到blob地址无法返回的问题；支持跨帖自动无限加载、长按下载原图、底部缩略图轨、丝滑缩回原图
-// @author       devycx
+// @description  把 m.youtube.com 社区帖图片变成全屏画廊：跨帖无限连播、底部缩略图轨、双指缩放、长按下载原图，并修掉点下载被 SPA 路由劫持跳走的问题
+// @author       ycx
 // @license      MIT
+// @homepageURL  https://github.com/devycx/yt-community-image-viewer
+// @supportURL   https://github.com/devycx/yt-community-image-viewer/issues
 // @match        *://m.youtube.com/*
 // @grant        none
 // @run-at       document-start
-// @homepageURL  https://github.com/devycx/yt-community-image-viewer
-// @supportURL   https://github.com/devycx/yt-community-image-viewer/issues
 // ==/UserScript==
 
 (function() {

@@ -1,50 +1,58 @@
-# YouTube 移动网页版社区图片全屏查看器
+# YouTube 移动版社区图片全屏查看器
 
-YouTube 移动网页版 (`m.youtube.com`) 的社区帖图片点开后体验很粗糙：不能缩放、没有画廊、下载会被 SPA 路由劫持。这个油猴脚本把社区帖图片升级成完整的移动端相册查看器。
+`m.youtube.com` 的社区帖图片点开就是一张孤零零的图：不能缩放、没有画廊、想存原图还会被 YouTube 的 SPA 路由劫持到 `blob:` 地址回不来。这个脚本把它补成一个完整的移动端相册。
 
-- 安装（Greasy Fork）：发布后补充链接
-- 直接装（GitHub）：https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js
-- 适用范围：`m.youtube.com`（移动浏览器 + 油猴），桌面浏览器也可用
+- 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/PLACEHOLDER)
+- 源码：[GitHub](https://github.com/devycx/yt-community-image-viewer) · [直接安装 .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
+- 适用范围：`*://m.youtube.com/*`
 - 版本：4.3.0
 
-## 手势操作
+## 手势
 
-| 手势 | 效果 |
+| 手势 | 行为 |
 | --- | --- |
-| 单击 | 丝滑缩回原图位置并关闭（FLIP 动画） |
-| 双击 | 放大 2.5 倍 / 复位，带缓动 |
-| 双指捏合 | 0.75x – 5x 缩放，可单指平移 |
-| 单指横向滑动 | 切换图片；贴边时的阻尼回弹 |
-| 单指纵向滑动 | 跟手缩小 + 背景变暗，超过阈值即关闭 |
-| 长按 450ms | 震动反馈并保存当前图片的无损原图 |
-| 快速甩动 | 依速度判定翻页，不用滑到一半 |
+| 单击 | 250ms 内没有第二次点击，缩回原图位置并关闭（FLIP 动画） |
+| 双击 | 在 1x 和 2.5x 之间切换，带缓动 |
+| 双指捏合 | 0.75x – 5x 缩放，松手后小于 1x 会回弹到 1x |
+| 放大后单指拖动 | 平移图片，不触发翻页 |
+| 单指横滑 | 切换图片；第一张/最后一张有阻尼；甩动速度超过 0.22 px/ms 也算翻页 |
+| 单指纵滑 | 图片跟手缩小、背景变暗，超过 55px 松手即关闭 |
+| 长按 450ms | 震动反馈并保存原图 |
+| 点缩略图 | 直接跳到对应图片，缩略图轨自动居中 |
 
 ## 核心功能
 
-- **跨帖无限连播**：滑到最后一张附近会自动驱动底层页面继续无限加载，新帖子的图片增量追加进画廊；顶栏「跨帖」开关可切换为仅浏览当前帖。偏好存 localStorage，下次自动恢复。
-- **底部缩略图轨**：当前图片高亮并自动居中滚动，点击任意缩略图直达；「画廊」开关可隐藏。
-- **无损原图下载**：`ggpht/googleusercontent` 地址自动重写到 `=s0` 拿最大分辨率。
+- **跨帖无限连播**：默认把页面上所有社区帖的图片收进同一个画廊。滑到倒数第二张时开始驱动底层页面滚到 `ytm-continuation-item-renderer`，触发 YouTube 自己的无限加载；新帖图片由 `MutationObserver` 增量追加，不重建已有节点。
+- **底部缩略图轨**：当前图片高亮并自动滚到中间；顶栏「画廊」开关可隐藏。
+- **原图下载**：`ggpht` / `googleusercontent` 的地址重写成 `=s0` 拿最大分辨率，长按或点顶栏「⬇ 原图」都能存。
+- **偏好持久化**：「跨帖」「画廊」两个开关存在 `localStorage` 的 `yt_mobile_img_viewer_cfg_v4` 里，刷新后恢复。
 
-## 下载防跳转（v4.3 重点修复）
+## 下载防跳转（v4.3）
 
-YouTube (Polymer/c3) 的全局路由会劫持带 `download` 属性或 `blob:` 地址的 `<a>` 点击，把页面跳到 blob 地址后无法返回。三层修复：
+YouTube 的全局点击路由会接管带 `download` 属性或 `blob:` 地址的 `<a>`，把当前页跳到 blob 地址，之后后退也回不到帖子。修复分三层：
 
-1. `run-at document-start` 就注册顶层捕获监听器，抢在 YouTube 路由之前 `stopImmediatePropagation`，且故意不 `preventDefault`，保留浏览器原生下载行为。
-2. 下载在专用隐藏 iframe 的独立文档里触发，主文档路由监听器完全接触不到。
-3. Blob 以 `application/octet-stream` 提供，避免移动端浏览器在标签页内预览而不是下载。
+1. **document-start 顶层捕获**：脚本在 YouTube 路由之前注册 `click` 捕获监听，命中下载链接就 `stopPropagation` + `stopImmediatePropagation`，但**不调用** `preventDefault`，保留浏览器原生下载。
+2. **隐藏 iframe 里触发**：下载用的 `<a>` 建在专用 `iframe` 的文档里，主文档的路由监听器根本接触不到这个节点。
+3. **octet-stream 包一层**：拿到的图片 blob 重新包成 `application/octet-stream`，避免移动端浏览器把 blob 当图片在当前标签页预览而不是下载。
 
-跨域取图失败时兜底 `window.open` 新标签页，绝不劫持当前页地址。
+跨域 `fetch` 失败时退回 `window.open` 新标签页打开原图，不会劫持当前页。
 
-## 技术要点
+## 实现要点
 
-- 常驻 GPU 合成层（`translate3d` + `will-change` + `backface-visibility`），横滑/缩放全程不掉帧；overlay 自带 scroll 归零兜底，杜绝左滑露底。
-- FLIP 原图几何计算：打开时从缩略图位置平滑放大，关闭时若原图已滚出视口，先把底层页面锚定回帖子所在位置，再缩回去，动画永远"缩向你点的那张图"。
-- 图片按 `ggpht.com`/`googleusercontent.com` 域名收集，头像、评论区图片一律排除。
-- 顶栏/底栏事件隔离，触摸操作不会穿透或误触发底层页面。
+- **FLIP 几何**：打开时按被点缩略图与全屏渲染尺寸算出 `dx / dy / scale`，先把大图放到缩略图位置再动画到中心；关闭时如果原图已滚出视口，先把底层页面滚回帖子位置，再缩回去。
+- **手势状态机**：`pinch` / `pan` / `horizontal-gallery` / `vertical-dismiss` 四种模式，按首次移动的方向和当前缩放决定，避免横滑翻页和纵滑关闭打架。
+- **合成层**：轨道和图片常驻 `translate3d`、`will-change`、`backface-visibility: hidden`，动画期间不触发布局。
+- **事件隔离**：顶栏和缩略图轨上的触摸事件全部 `stopPropagation`，不会穿透到手势层或底层页面。
+- **DOM 依赖**：只认 `ytm-backstage-post-renderer`、`ytm-backstage-image-renderer`、`.post-image-container` 这些 YouTube 移动端自定义元素；头像、评论区图片通过 `closest()` 排除。
 
 ## 已知边界
 
-- 依赖 YouTube 当前的移动端 DOM 结构（`ytm-backstage-post-renderer` 等自定义元素），YouTube 改版可能需要更新选择器。
-- `@grant none`：下载走页面级 `fetch`，若 YouTube 调整图片域头的 CORS 策略，下载会走新标签页兜底，仍不会劫持页面。
+- 只匹配 `m.youtube.com`，桌面版 `www.youtube.com` 不生效。
+- 依赖 YouTube 当前的移动端 DOM 结构和自定义元素名，改版可能需要更新选择器。
+- 跨帖连播会滚动底层页面来触发加载，这是有意的；关掉「跨帖」后就只浏览当前帖子。
+- 超长会话里画廊节点只增不减（关闭时清空），一次浏览几百张图会占用更多内存。
+- `@grant none`，下载走页面级 `fetch`。YouTube 调整图片域 CORS 策略时会走新标签页兜底。
 
-MIT License，详见 [LICENSE](LICENSE)。
+## License
+
+MIT，见 [LICENSE](LICENSE)。
