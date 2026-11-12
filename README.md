@@ -2,7 +2,7 @@
 
 `m.youtube.com` 的社区帖图片点开就是一张孤零零的图：不能缩放、没有画廊、想存原图还会被 YouTube 的 SPA 路由劫持到 `blob:` 地址回不来。这个脚本把它补成一个完整的移动端相册。
 
-- 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/PLACEHOLDER)
+- 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/605153)
 - 源码：[GitHub](https://github.com/devycx/yt-community-image-viewer) · [直接安装 .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
 - 适用范围：`*://m.youtube.com/*`
 - 版本：4.3.0
