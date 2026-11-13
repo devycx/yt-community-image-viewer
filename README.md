@@ -1,58 +1,60 @@
-# YouTube 移动版社区图片全屏查看器
+# YouTube Mobile Community Image Viewer
 
-`m.youtube.com` 的社区帖图片点开就是一张孤零零的图：不能缩放、没有画廊、想存原图还会被 YouTube 的 SPA 路由劫持到 `blob:` 地址回不来。这个脚本把它补成一个完整的移动端相册。
+Opening an image in an `m.youtube.com` community post gives you one lonely picture: no zoom, no gallery, and saving the original can be hijacked by YouTube's SPA router to a `blob:` URL from which you cannot go back. This userscript turns it into a complete mobile gallery.
 
-- 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/605153)
-- 源码：[GitHub](https://github.com/devycx/yt-community-image-viewer) · [直接安装 .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
-- 适用范围：`*://m.youtube.com/*`
-- 版本：4.3.0
+**English** | [简体中文](README.zh-CN.md)
 
-## 手势
+- Install: [Greasy Fork](https://greasyfork.org/en/scripts/605153)
+- Source: [GitHub](https://github.com/devycx/yt-community-image-viewer) · [direct .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
+- Works on: `*://m.youtube.com/*`
+- Version: 4.4.0
 
-| 手势 | 行为 |
+## Gestures
+
+| Gesture | Action |
 | --- | --- |
-| 单击 | 250ms 内没有第二次点击，缩回原图位置并关闭（FLIP 动画） |
-| 双击 | 在 1x 和 2.5x 之间切换，带缓动 |
-| 双指捏合 | 0.75x – 5x 缩放，松手后小于 1x 会回弹到 1x |
-| 放大后单指拖动 | 平移图片，不触发翻页 |
-| 单指横滑 | 切换图片；第一张/最后一张有阻尼；甩动速度超过 0.22 px/ms 也算翻页 |
-| 单指纵滑 | 图片跟手缩小、背景变暗，超过 55px 松手即关闭 |
-| 长按 450ms | 震动反馈并保存原图 |
-| 点缩略图 | 直接跳到对应图片，缩略图轨自动居中 |
+| Single tap | If no second tap within 250ms, shrink back to the original thumbnail and close (FLIP animation) |
+| Double tap | Toggle between 1x and 2.5x with easing |
+| Pinch | 0.75x–5x zoom; below 1x springs back to 1x on release |
+| One-finger drag while zoomed | Pan the image without changing pages |
+| One-finger horizontal swipe | Change image; first/last image has resistance; a flick faster than 0.22 px/ms also changes images |
+| One-finger vertical swipe | Image follows and shrinks, backdrop darkens; release past 55px closes |
+| Long press 450ms | Haptic feedback and save the original image |
+| Tap a thumbnail | Jump to that image; the thumbnail strip centers it |
 
-## 核心功能
+## Core features
 
-- **跨帖无限连播**：默认把页面上所有社区帖的图片收进同一个画廊。滑到倒数第二张时开始驱动底层页面滚到 `ytm-continuation-item-renderer`，触发 YouTube 自己的无限加载；新帖图片由 `MutationObserver` 增量追加，不重建已有节点。
-- **底部缩略图轨**：当前图片高亮并自动滚到中间；顶栏「画廊」开关可隐藏。
-- **原图下载**：`ggpht` / `googleusercontent` 的地址重写成 `=s0` 拿最大分辨率，长按或点顶栏「⬇ 原图」都能存。
-- **偏好持久化**：「跨帖」「画廊」两个开关存在 `localStorage` 的 `yt_mobile_img_viewer_cfg_v4` 里，刷新后恢复。
+- **Cross-post infinite browsing**: by default, images from every community post on the page go into one gallery. Near the last image, the script scrolls the underlying page to `ytm-continuation-item-renderer` to trigger YouTube's own infinite loader; new post images are appended incrementally by a `MutationObserver` without rebuilding existing nodes.
+- **Bottom thumbnail strip**: the current image is highlighted and auto-centered; the top-bar "Gallery" toggle hides the strip.
+- **Original image download**: `ggpht` / `googleusercontent` URLs are rewritten to `=s0` for maximum resolution; long-press or tap "⬇ Original".
+- **Persistent preferences**: the "All posts" and "Gallery" toggles are stored in `localStorage` under `yt_mobile_img_viewer_cfg_v4`.
 
-## 下载防跳转（v4.3）
+## Download hijack fix (v4.3)
 
-YouTube 的全局点击路由会接管带 `download` 属性或 `blob:` 地址的 `<a>`，把当前页跳到 blob 地址，之后后退也回不到帖子。修复分三层：
+YouTube's global click router takes over `<a>` tags with a `download` attribute or a `blob:` URL, sends the current page to the blob URL, and back navigation cannot return to the post. The fix has three layers:
 
-1. **document-start 顶层捕获**：脚本在 YouTube 路由之前注册 `click` 捕获监听，命中下载链接就 `stopPropagation` + `stopImmediatePropagation`，但**不调用** `preventDefault`，保留浏览器原生下载。
-2. **隐藏 iframe 里触发**：下载用的 `<a>` 建在专用 `iframe` 的文档里，主文档的路由监听器根本接触不到这个节点。
-3. **octet-stream 包一层**：拿到的图片 blob 重新包成 `application/octet-stream`，避免移动端浏览器把 blob 当图片在当前标签页预览而不是下载。
+1. **Top-level capture at document-start**: the script registers a `click` capture listener before YouTube's router; when it sees a download link it calls `stopPropagation` + `stopImmediatePropagation` but **not** `preventDefault`, preserving the native download.
+2. **Trigger inside a hidden iframe**: the download `<a>` lives in a dedicated iframe document, so the main document's router listeners never see the node.
+3. **Wrap in octet-stream**: the fetched image blob is repackaged as `application/octet-stream`, so mobile browsers download it instead of previewing it in the current tab.
 
-跨域 `fetch` 失败时退回 `window.open` 新标签页打开原图，不会劫持当前页。
+If cross-origin `fetch` fails, it falls back to `window.open` in a new tab and never hijacks the current page.
 
-## 实现要点
+## Implementation notes
 
-- **FLIP 几何**：打开时按被点缩略图与全屏渲染尺寸算出 `dx / dy / scale`，先把大图放到缩略图位置再动画到中心；关闭时如果原图已滚出视口，先把底层页面滚回帖子位置，再缩回去。
-- **手势状态机**：`pinch` / `pan` / `horizontal-gallery` / `vertical-dismiss` 四种模式，按首次移动的方向和当前缩放决定，避免横滑翻页和纵滑关闭打架。
-- **合成层**：轨道和图片常驻 `translate3d`、`will-change`、`backface-visibility: hidden`，动画期间不触发布局。
-- **事件隔离**：顶栏和缩略图轨上的触摸事件全部 `stopPropagation`，不会穿透到手势层或底层页面。
-- **DOM 依赖**：只认 `ytm-backstage-post-renderer`、`ytm-backstage-image-renderer`、`.post-image-container` 这些 YouTube 移动端自定义元素；头像、评论区图片通过 `closest()` 排除。
+- **FLIP geometry**: on open, compute `dx / dy / scale` from the tapped thumbnail and the full-screen render size; place the large image at the thumbnail first, then animate it to the center. On close, if the thumbnail has scrolled out of view, scroll the underlying page back to the post first, then shrink.
+- **Gesture state machine**: `pinch` / `pan` / `horizontal-gallery` / `vertical-dismiss`; the mode is chosen from the first movement direction and current zoom, so horizontal paging and vertical dismissal do not fight.
+- **Composited layers**: the track and images stay on `translate3d`, `will-change`, and `backface-visibility: hidden`, so animation does not trigger layout.
+- **Event isolation**: touch events on the top bar and thumbnail strip call `stopPropagation`, so they do not reach the gesture layer or the page below.
+- **DOM dependencies**: only matches `ytm-backstage-post-renderer`, `ytm-backstage-image-renderer`, and `.post-image-container`; avatar and comment images are excluded with `closest()`.
 
-## 已知边界
+## Known limits
 
-- 只匹配 `m.youtube.com`，桌面版 `www.youtube.com` 不生效。
-- 依赖 YouTube 当前的移动端 DOM 结构和自定义元素名，改版可能需要更新选择器。
-- 跨帖连播会滚动底层页面来触发加载，这是有意的；关掉「跨帖」后就只浏览当前帖子。
-- 超长会话里画廊节点只增不减（关闭时清空），一次浏览几百张图会占用更多内存。
-- `@grant none`，下载走页面级 `fetch`。YouTube 调整图片域 CORS 策略时会走新标签页兜底。
+- Only matches `m.youtube.com`; desktop `www.youtube.com` is not affected.
+- Depends on YouTube's current mobile DOM and custom element names; a redesign may require selector updates.
+- Cross-post browsing scrolls the underlying page to trigger loading; this is intentional. Turn off "All posts" to browse only the current post.
+- In very long sessions the gallery only grows (it is cleared on close); browsing hundreds of images uses more memory.
+- `@grant none`: downloads use page-level `fetch`. If YouTube changes the image domain's CORS policy, it falls back to a new tab.
 
 ## License
 
-MIT，见 [LICENSE](LICENSE)。
+MIT, see [LICENSE](LICENSE).

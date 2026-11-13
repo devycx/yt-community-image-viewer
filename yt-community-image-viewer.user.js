@@ -1,8 +1,12 @@
 // ==UserScript==
-// @name         YouTube 移动版社区图片全屏查看器
+// @name         YouTube Mobile Community Image Viewer - Fullscreen Gallery
+// @name:en      YouTube Mobile Community Image Viewer - Fullscreen Gallery
+// @name:zh-CN   YouTube 移动版社区图片全屏查看器
 // @namespace    https://github.com/devycx/yt-community-image-viewer
-// @version      4.3.0
-// @description  把 m.youtube.com 社区帖图片变成全屏画廊：跨帖无限连播、底部缩略图轨、双指缩放、长按下载原图，并修掉点下载被 SPA 路由劫持跳走的问题
+// @version      4.4.0
+// @description  Turn images in m.youtube.com community posts into a full-screen mobile gallery: browse across posts, pinch to zoom, use the thumbnail strip, long-press to download the original image, and avoid YouTube SPA hijacking download taps.
+// @description:en  Turn images in m.youtube.com community posts into a full-screen mobile gallery: browse across posts, pinch to zoom, use the thumbnail strip, long-press to download the original image, and avoid YouTube SPA hijacking download taps.
+// @description:zh-CN  把 m.youtube.com 社区帖图片变成全屏画廊：跨帖无限连播、底部缩略图轨、双指缩放、长按下载原图，并修掉点下载被 SPA 路由劫持跳走的问题
 // @author       ycx
 // @license      MIT
 // @homepageURL  https://github.com/devycx/yt-community-image-viewer
@@ -15,21 +19,61 @@
 (function() {
     'use strict';
 
-    // 0. 最早期（document-start）抢先注册顶层捕获监听器：
-    // 阻止 YouTube (Polymer/c3) 的全局 SPA 路由拦截带有 download 属性或 blob: 协议的 <a> 标签点击事件
+    const MESSAGES = {
+        en: {
+            crossPost: 'All posts',
+            gallery: 'Gallery',
+            original: '⬇ Original',
+            saving: 'Saving original image…',
+            downloadStarted: 'Original image download started',
+            crossOn: 'On: browsing images across all posts',
+            crossOff: 'Off: browsing this post only',
+            galleryOn: 'On: bottom thumbnail gallery',
+            galleryOff: 'Off: bottom thumbnail gallery',
+        },
+        'zh-CN': {
+            crossPost: '跨帖',
+            gallery: '画廊',
+            original: '⬇ 原图',
+            saving: '正在保存高清原图...',
+            downloadStarted: '已触发原图下载',
+            crossOn: '已开启：跨帖子无限连播',
+            crossOff: '已关闭：仅浏览当前帖子',
+            galleryOn: '已开启：底部缩略图画廊',
+            galleryOff: '已隐藏：底部缩略图画廊',
+        },
+    };
+
+    function detectLocale() {
+        const languages = Array.isArray(navigator.languages) && navigator.languages.length
+            ? navigator.languages
+            : [navigator.language || 'en'];
+        for (const language of languages) {
+            const normalized = String(language).toLowerCase();
+            if (normalized === 'zh' || normalized.startsWith('zh-')) return 'zh-CN';
+            if (normalized === 'en' || normalized.startsWith('en-')) return 'en';
+        }
+        return 'en';
+    }
+
+    const UI_LOCALE = detectLocale();
+    const t = MESSAGES[UI_LOCALE] || MESSAGES.en;
+
+    // 0. At the earliest point (document-start), install the top-level capture listener first:
+    // Stop YouTube's (Polymer/c3) global SPA router from intercepting clicks on <a> tags with download or blob: URLs
     window.addEventListener('click', (e) => {
         const a = e.target && typeof e.target.closest === 'function' ? e.target.closest('a') : null;
         if (a && (a.hasAttribute('data-yt-viewer-dl') || a.hasAttribute('download') || (a.href && a.href.startsWith('blob:')))) {
             e.stopPropagation();
             e.stopImmediatePropagation();
-            // 注意：绝不调用 e.preventDefault()，保留浏览器原生下载默认行为
+            // Important: never call e.preventDefault(); keep the browser's native download behavior
         }
     }, true);
 
     const initViewer = () => {
         if (document.getElementById('yt-mobile-img-viewer-overlay')) return;
 
-        // 1. 读取与保存用户偏好设置（默认开启跨帖浏览与水平画廊）
+        // 1. Load and save user preferences (cross-post browsing and the horizontal gallery are on by default)
         const CONFIG_KEY = 'yt_mobile_img_viewer_cfg_v4';
         let config = {
             crossPost: true,
@@ -48,7 +92,7 @@
             } catch (e) {}
         };
 
-        // 2. 注入全局样式
+        // 2. Inject global styles
         const style = document.createElement('style');
         style.textContent = `
             ytm-backstage-post-renderer img,
@@ -95,7 +139,7 @@
         `;
         (document.head || document.documentElement).appendChild(style);
 
-        // 3. 构建常驻 GPU 合成层全屏容器
+        // 3. Build the persistent GPU-composited full-screen container
         const overlay = document.createElement('div');
         overlay.id = 'yt-mobile-img-viewer-overlay';
         overlay.className = 'yt-viewer-overlay';
@@ -115,7 +159,7 @@
             webkitUserSelect: 'none'
         });
 
-        // 兜底锁死 overlay 自身任何潜在的编程式滚动偏移，彻底杜绝左滑露底
+        // Fallback: pin the overlay's own scroll offsets to zero so a left swipe can never reveal the page underneath
         overlay.addEventListener('scroll', () => {
             if (overlay.scrollLeft !== 0 || overlay.scrollTop !== 0) {
                 overlay.scrollLeft = 0;
@@ -161,7 +205,7 @@
         });
         sliderViewport.appendChild(sliderTrack);
 
-        // 顶部控制栏
+        // Top control bar
         const topBar = document.createElement('div');
         Object.assign(topBar.style, {
             position: 'absolute',
@@ -189,15 +233,15 @@
 
         const crossPostBtn = document.createElement('div');
         crossPostBtn.className = `yt-viewer-pill ${config.crossPost ? 'active' : ''}`;
-        crossPostBtn.textContent = '跨帖';
+        crossPostBtn.textContent = t.crossPost;
 
         const galleryToggleBtn = document.createElement('div');
         galleryToggleBtn.className = `yt-viewer-pill ${config.showGalleryBar ? 'active' : ''}`;
-        galleryToggleBtn.textContent = '画廊';
+        galleryToggleBtn.textContent = t.gallery;
 
         const downloadBtn = document.createElement('div');
         downloadBtn.className = 'yt-viewer-pill';
-        downloadBtn.textContent = '⬇ 原图';
+        downloadBtn.textContent = t.original;
 
         actionGroup.appendChild(crossPostBtn);
         actionGroup.appendChild(galleryToggleBtn);
@@ -205,7 +249,7 @@
         topBar.appendChild(counter);
         topBar.appendChild(actionGroup);
 
-        // 底部水平画廊缩略图栏
+        // Bottom horizontal thumbnail gallery
         const thumbStrip = document.createElement('div');
         thumbStrip.className = 'yt-viewer-thumb-strip';
         Object.assign(thumbStrip.style, {
@@ -228,7 +272,7 @@
             pointerEvents: 'auto'
         });
 
-        // 轻提示 Toast
+        // Lightweight toast
         const toast = document.createElement('div');
         Object.assign(toast.style, {
             position: 'absolute',
@@ -248,7 +292,7 @@
             transition: 'opacity 0.18s ease, transform 0.18s ease'
         });
 
-        // 专用隐藏下载沙盒 iframe：隔离 YouTube 主文档的所有路由监听器，且即便部分浏览器把 blob 当成页面打开也只会作用在隐藏 iframe 内，绝不改变当前网页地址
+        // Dedicated hidden download sandbox iframe: isolates every router listener in the YouTube document; even if a browser opens the blob as a page, it only happens inside this hidden iframe and never changes the current URL
         const dlIframe = document.createElement('iframe');
         Object.assign(dlIframe.style, {
             position: 'fixed',
@@ -269,9 +313,9 @@
         document.body.appendChild(overlay);
         document.body.appendChild(dlIframe);
 
-        // 4. 状态管理变量
+        // 4. State
         let galleryItems = []; // [{ src, el, postEl, slideImg, thumbEl }]
-        let seenUrls = new Set(); // 去重集合，用于增量追加新帖子图片
+        let seenUrls = new Set(); // dedupe set for incrementally appending images from new posts
         let originClickedEl = null;
         let currentIndex = 0;
         let isViewerOpen = false;
@@ -298,7 +342,7 @@
         const getVh = () => window.innerHeight || document.documentElement.clientHeight;
         const getActiveImg = () => galleryItems[currentIndex]?.slideImg || null;
 
-        // 仅在垂直方向滚动底层页面，严禁触发任何横向滚动或容器 scrollIntoView 冒泡
+        // Scroll the underlying page vertically only; never trigger horizontal scrolling or container scrollIntoView bubbling
         const scrollPageVerticallyToElement = (el, align = 'center') => {
             if (!el) return;
             const rect = el.getBoundingClientRect();
@@ -326,7 +370,7 @@
             }, duration);
         };
 
-        // 5. 下载引擎：在独立隐藏 iframe 内触发下载 + 顶层捕获拦截，杜绝 YouTube SPA 路由劫持跳转到 blob: 地址
+        // 5. Download engine: trigger the download inside an isolated hidden iframe plus the top-level capture guard, so YouTube's SPA router cannot hijack it to a blob: URL
         const getLosslessUrl = (src) => {
             if (!src) return '';
             if (src.includes('ggpht.com') || src.includes('googleusercontent.com')) {
@@ -344,7 +388,7 @@
             }
 
             const highResUrl = getLosslessUrl(item.src);
-            showToast('正在保存高清原图...');
+            showToast(t.saving);
 
             try {
                 const response = await fetch(highResUrl, { mode: 'cors', credentials: 'omit' });
@@ -354,11 +398,11 @@
                 const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
                 const fileName = `YT_Post_${Date.now()}.${ext}`;
 
-                // 使用 application/octet-stream 强制移动端浏览器唤起下载器而非在标签页内预览图片
+                // application/octet-stream forces mobile browsers to open the download manager instead of previewing the image in a tab
                 const octetBlob = new Blob([rawBlob], { type: 'application/octet-stream' });
                 const blobUrl = URL.createObjectURL(octetBlob);
 
-                // 优先在隔离的隐藏 iframe 文档内触发下载，完全绕开 YouTube 主文档的路由监听器
+                // Prefer triggering the download in the isolated hidden iframe document, fully bypassing the main YouTube document's router listeners
                 const targetDoc = dlIframe.contentDocument || document;
                 const targetContainer = targetDoc.body || targetDoc.documentElement || document.body;
 
@@ -378,16 +422,16 @@
                     a.remove();
                 }, 300);
 
-                // 延长释放时间至 60 秒，确保移动端后台下载管理器有充足时间读取流
+                // Keep the object URL alive for 60s so mobile background download managers have time to read the stream
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-                showToast('已触发原图下载');
+                showToast(t.downloadStarted);
             } catch (err) {
-                // 若跨域获取失败，通过 window.open 新标签页打开原图（避免被 YouTube <a> 路由接管当前页）
+                // If cross-origin fetch fails, open the original image in a new tab (prevents YouTube's <a> router from taking over the current page)
                 window.open(highResUrl, '_blank', 'noopener,noreferrer');
             }
         };
 
-        // 6. 顶栏与底栏事件隔离
+        // 6. Isolate events on the top and bottom bars
         [topBar, thumbStrip].forEach(bar => {
             ['touchstart', 'touchmove', 'touchend', 'click'].forEach(evt => {
                 bar.addEventListener(evt, (e) => e.stopPropagation(), { passive: true });
@@ -400,7 +444,7 @@
             config.crossPost = !config.crossPost;
             crossPostBtn.classList.toggle('active', config.crossPost);
             saveConfig();
-            showToast(config.crossPost ? '已开启：跨帖子无限连播' : '已关闭：仅浏览当前帖子');
+            showToast(config.crossPost ? t.crossOn : t.crossOff);
 
             const currentActiveEl = galleryItems[currentIndex]?.el || originClickedEl;
             if (currentActiveEl) {
@@ -414,10 +458,10 @@
             galleryToggleBtn.classList.toggle('active', config.showGalleryBar);
             saveConfig();
             updateThumbStripVisibility();
-            showToast(config.showGalleryBar ? '已开启：底部缩略图画廊' : '已隐藏：底部缩略图画廊');
+            showToast(config.showGalleryBar ? t.galleryOn : t.galleryOff);
         });
 
-        // 7. 矩阵变换与 UI 状态更新
+        // 7. Matrix transforms and UI state updates
         const applyTrackTransform = (dx = 0, withTransition = false) => {
             const vw = getVw();
             sliderTrack.style.transition = withTransition
@@ -464,11 +508,11 @@
             thumbStrip.style.pointerEvents = shouldShow ? 'auto' : 'none';
         };
 
-        // 8. 构建单个主图节点与缩略图节点（支持初始化与后续增量追加复用）
+        // 8. Build one main image node and its thumbnail (reused for the initial build and incremental appends)
         const mountSingleSlideAndThumb = (item, idx) => {
             const vw = getVw();
 
-            // 1) 主图轨道节点
+            // 1) Main image track node
             const slideWrap = document.createElement('div');
             Object.assign(slideWrap.style, {
                 width: `${vw}px`,
@@ -497,7 +541,7 @@
             slideWrap.appendChild(img);
             sliderTrack.appendChild(slideWrap);
 
-            // 2) 底部缩略图节点
+            // 2) Bottom thumbnail node
             const thumb = document.createElement('img');
             thumb.src = item.src;
             Object.assign(thumb.style, {
@@ -527,7 +571,7 @@
             thumbStrip.appendChild(thumb);
         };
 
-        // 9. 增量扫描与自动触底加载更多帖子引擎
+        // 9. Incremental scan and auto-load-more-posts engine
         const appendNewDiscoveredItems = () => {
             if (!isViewerOpen || isClosing || !config.crossPost) return 0;
 
@@ -582,7 +626,7 @@
             return addedCount;
         };
 
-        // 触发底层网页向下滚动以唤醒 YouTube 无限加载
+        // Scroll the underlying page down to wake YouTube's infinite loader
         const triggerUnderlyingInfiniteScroll = () => {
             if (!isViewerOpen || isClosing || !config.crossPost || isFetchingMore) return;
             isFetchingMore = true;
@@ -620,7 +664,7 @@
             });
         };
 
-        // 启动/停止底层 DOM 变动观察器
+        // Start/stop the underlying DOM observer
         const startDomObserver = () => {
             stopDomObserver();
             domObserver = new MutationObserver(() => {
@@ -646,7 +690,7 @@
             }
         };
 
-        // 10. 同步当前选中图片状态
+        // 10. Sync the selected image state
         const syncActiveSlideState = () => {
             counter.textContent = `${currentIndex + 1} / ${galleryItems.length}`;
 
@@ -699,7 +743,7 @@
             syncActiveSlideState();
         };
 
-        // 11. 计算 FLIP 原图几何变换矩阵
+        // 11. Compute the FLIP geometry from the original thumbnail
         const computeMorphDelta = (item) => {
             const vw = getVw();
             const vh = getVh();
@@ -743,7 +787,7 @@
             return { dx, dy, s };
         };
 
-        // 12. 打开与丝滑缩回原图
+        // 12. Open and smoothly shrink back to the original image
         const openViewer = (items, startIndex, clickedEl) => {
             if (isViewerOpen || items.length === 0) return;
             isViewerOpen = true;
@@ -823,7 +867,7 @@
             applyTrackTransform(0, false);
         });
 
-        // 13. 触控手势引擎
+        // 13. Touch gesture engine
         const getDistance = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
 
         overlay.addEventListener('touchstart', (e) => {
@@ -1016,7 +1060,7 @@
             }
         });
 
-        // 14. 初始扫描图片队列
+        // 14. Initial image queue scan
         const extractGalleryItems = (targetImg) => {
             const singlePostRoot = targetImg.closest(
                 'ytm-backstage-post-renderer, ytm-post-multi-image-renderer, ytm-shared-post-renderer, ytm-backstage-post-thread-renderer, article'
@@ -1080,7 +1124,7 @@
             return { items, clickedIndex };
         };
 
-        // 15. 全局捕获点击
+        // 15. Global click capture
         document.addEventListener('click', (e) => {
             if (isViewerOpen) return;
 
