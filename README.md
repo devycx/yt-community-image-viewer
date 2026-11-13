@@ -7,7 +7,7 @@ Opening an image in an `m.youtube.com` community post gives you one lonely pictu
 - Install: [Greasy Fork](https://greasyfork.org/en/scripts/605153)
 - Source: [GitHub](https://github.com/devycx/yt-community-image-viewer) · [direct .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
 - Works on: `*://m.youtube.com/*`
-- Version: 4.4.0
+- Version: 4.4.1
 
 ## Gestures
 

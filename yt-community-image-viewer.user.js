@@ -3,7 +3,7 @@
 // @name:en      YouTube Mobile Community Image Viewer - Fullscreen Gallery
 // @name:zh-CN   YouTube 移动版社区图片全屏查看器
 // @namespace    https://github.com/devycx/yt-community-image-viewer
-// @version      4.4.0
+// @version      4.4.1
 // @description  Turn images in m.youtube.com community posts into a full-screen mobile gallery: browse across posts, pinch to zoom, use the thumbnail strip, long-press to download the original image, and avoid YouTube SPA hijacking download taps.
 // @description:en  Turn images in m.youtube.com community posts into a full-screen mobile gallery: browse across posts, pinch to zoom, use the thumbnail strip, long-press to download the original image, and avoid YouTube SPA hijacking download taps.
 // @description:zh-CN  把 m.youtube.com 社区帖图片变成全屏画廊：跨帖无限连播、底部缩略图轨、双指缩放、长按下载原图，并修掉点下载被 SPA 路由劫持跳走的问题
@@ -26,10 +26,10 @@
             original: '⬇ Original',
             saving: 'Saving original image…',
             downloadStarted: 'Original image download started',
-            crossOn: 'On: browsing images across all posts',
-            crossOff: 'Off: browsing this post only',
-            galleryOn: 'On: bottom thumbnail gallery',
-            galleryOff: 'Off: bottom thumbnail gallery',
+            crossOn: 'Cross-post browsing on',
+            crossOff: 'Cross-post browsing off',
+            galleryOn: 'Thumbnail gallery on',
+            galleryOff: 'Thumbnail gallery off',
         },
         'zh-CN': {
             crossPost: '跨帖',

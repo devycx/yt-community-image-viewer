@@ -7,7 +7,7 @@
 - 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/605153)
 - 源码：[GitHub](https://github.com/devycx/yt-community-image-viewer) · [直接安装 .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
 - 适用范围：`*://m.youtube.com/*`
-- 版本：4.4.0
+- 版本：4.4.1
 
 ## 手势
 
