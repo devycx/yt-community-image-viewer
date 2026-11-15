@@ -1,5 +1,7 @@
 # YouTube Mobile Community Image Viewer
 
+[![Greasy Fork version](https://img.shields.io/greasyfork/v/605153)](https://greasyfork.org/en/scripts/605153)
+
 Opening an image in an `m.youtube.com` community post gives you one lonely picture: no zoom, no gallery, and saving the original can be hijacked by YouTube's SPA router to a `blob:` URL from which you cannot go back. This userscript turns it into a complete mobile gallery.
 
 **English** | [简体中文](README.zh-CN.md)

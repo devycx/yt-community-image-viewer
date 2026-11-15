@@ -1,5 +1,7 @@
 # YouTube 移动版社区图片全屏查看器
 
+[![Greasy Fork 版本](https://img.shields.io/greasyfork/v/605153)](https://greasyfork.org/zh-CN/scripts/605153)
+
 `m.youtube.com` 的社区帖图片点开就是一张孤零零的图：不能缩放、没有画廊、想存原图还会被 YouTube 的 SPA 路由劫持到 `blob:` 地址回不来。这个脚本把它补成一个完整的移动端相册。
 
 [English](README.md) | **简体中文**
