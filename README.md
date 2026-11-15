@@ -7,7 +7,17 @@ Opening an image in an `m.youtube.com` community post gives you one lonely pictu
 - Install: [Greasy Fork](https://greasyfork.org/en/scripts/605153)
 - Source: [GitHub](https://github.com/devycx/yt-community-image-viewer) · [direct .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
 - Works on: `*://m.youtube.com/*`
-- Version: 4.4.1
+- Version: 4.4.2
+- Chinese write-up: [Why it takes 1,000 lines, and the three-layer download fix](https://ycxdev.com/posts/m-youtube-community-image-gallery/)
+
+## Screenshots
+
+<p>
+  <img src="https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/screenshots/youtube-community-posts-feed.jpg" width="330" alt="m.youtube.com community post feed with an image carousel labelled 1/2">
+  <img src="https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/screenshots/youtube-community-image-gallery.jpg" width="330" alt="Full-screen gallery with a 5/15 cross-post counter, All posts / Gallery / Original controls, and a thumbnail strip">
+</p>
+
+Left: a community post in the `m.youtube.com` feed, images are a bare carousel. Right: after a tap, the script's full-screen gallery, with the `5 / 15` cross-post counter, the **All posts** / **Gallery** / **Original** controls, and the thumbnail strip. The labels are Chinese (`跨帖` / `画廊` / `原图`) because the phone locale is `zh-CN`; on an English device they read **All posts** / **Gallery** / **Original**.
 
 ## Gestures
 
@@ -54,6 +64,26 @@ If cross-origin `fetch` fails, it falls back to `window.open` in a new tab and n
 - Cross-post browsing scrolls the underlying page to trigger loading; this is intentional. Turn off "All posts" to browse only the current post.
 - In very long sessions the gallery only grows (it is cleared on close); browsing hundreds of images uses more memory.
 - `@grant none`: downloads use page-level `fetch`. If YouTube changes the image domain's CORS policy, it falls back to a new tab.
+
+## FAQ
+
+**Does it work on desktop YouTube?**
+No. It only matches `*://m.youtube.com/*`; `www.youtube.com` is untouched. A desktop user agent on `m.youtube.com` may also be redirected to the desktop site.
+
+**How do I save the original image, not the feed thumbnail?**
+Long-press for 450 ms, or tap **Original** in the top bar. `ggpht` / `googleusercontent` URLs are rewritten to `=s0` first, then fetched as a blob and handed to the browser as `application/octet-stream` so it downloads instead of opening.
+
+**Why did a download open a new tab?**
+The cross-origin `fetch` failed (CORS or network), so the script fell back to `window.open` with the original URL. The current page is never hijacked.
+
+**Which script managers are supported?**
+Tampermonkey, Violentmonkey, and the Safari / iOS userscript managers (`Userscripts`, `Orion`). `@grant none` is enough — no GM APIs required.
+
+**Does it collect anything?**
+No. There is no analytics and no remote code; the only network request is fetching the image you chose to download.
+
+**Does it work inside the YouTube app?**
+No. Userscripts only run in a browser, so open `m.youtube.com` in Chrome/Safari/Firefox on the phone.
 
 ## License
 

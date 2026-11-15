@@ -7,7 +7,17 @@
 - 安装：[Greasy Fork](https://greasyfork.org/zh-CN/scripts/605153)
 - 源码：[GitHub](https://github.com/devycx/yt-community-image-viewer) · [直接安装 .user.js](https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/yt-community-image-viewer.user.js)
 - 适用范围：`*://m.youtube.com/*`
-- 版本：4.4.1
+- 版本：4.4.2
+- 长文说明：[为什么写到一千多行、下载防跳转的三层修法](https://ycxdev.com/posts/m-youtube-community-image-gallery/)
+
+## 截图
+
+<p>
+  <img src="https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/screenshots/youtube-community-posts-feed.jpg" width="330" alt="m.youtube.com 社区帖信息流里的图片轮播，右上角标着 1/2">
+  <img src="https://raw.githubusercontent.com/devycx/yt-community-image-viewer/main/screenshots/youtube-community-image-gallery.jpg" width="330" alt="全屏画廊：5/15 跨帖计数、跨帖/画廊/原图 控件和底部缩略图轨">
+</p>
+
+左：`m.youtube.com` 信息流里的社区帖，图片只是原生轮播。右：点开之后的画廊——`5 / 15` 是跨帖连播的计数，顶栏三个控件是「跨帖」「画廊」「⬇ 原图」，底部是缩略图轨。
 
 ## 手势
 
@@ -54,6 +64,26 @@ YouTube 的全局点击路由会接管带 `download` 属性或 `blob:` 地址的
 - 跨帖连播会滚动底层页面来触发加载，这是有意的；关掉「跨帖」后就只浏览当前帖子。
 - 超长会话里画廊节点只增不减（关闭时清空），一次浏览几百张图会占用更多内存。
 - `@grant none`，下载走页面级 `fetch`。YouTube 调整图片域 CORS 策略时会走新标签页兜底。
+
+## 常见问题
+
+**桌面版 YouTube 能用吗？**
+不能。只匹配 `*://m.youtube.com/*`，`www.youtube.com` 完全不碰；桌面 UA 访问 `m.youtube.com` 还可能被重定向到桌面版。
+
+**怎么存原图？**
+长按 450ms，或点顶栏「⬇ 原图」。脚本会把 `ggpht` / `googleusercontent` 的尺寸后缀重写成 `=s0` 拿最大分辨率，再包成 `application/octet-stream` 交给浏览器下载。
+
+**为什么下载会新开一个标签页？**
+跨域 `fetch` 失败（CORS 或网络问题）时走了 `window.open` 兜底，当前页不会被劫持。
+
+**支持哪些油猴管理器？**
+Tampermonkey、Violentmonkey，以及 Safari / iOS 上的 `Userscripts`、`Orion`。脚本是 `@grant none`，不需要 GM API。
+
+**会收集数据吗？**
+不会。没有统计、不加载远程代码，唯一的网络请求是下载时取你选中的那张图。
+
+**YouTube App 里能用吗？**
+不能。油猴脚本只在浏览器里跑，要用手机浏览器打开 `m.youtube.com`。
 
 ## License
 
